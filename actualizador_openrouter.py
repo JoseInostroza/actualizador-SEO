@@ -9,7 +9,7 @@ load_dotenv()
 
 # ✅ CONFIGURA TU API KEY DE OPENROUTER AQUÍ:
 OPENROUTER_API_KEY = os.getenv("API_KEY")  # Reemplaza por tu clave real de OpenRouter
-OPENROUTER_MODEL = "mistralai/mistral-7b-instruct"  # Puedes cambiar el modelo si gustas
+OPENROUTER_MODEL = "gpt-4o"  # Puedes cambiar el modelo si gustas
 
 # ✅ Consulta a OpenRouter
 def solicitar_respuesta(prompt):
@@ -51,27 +51,29 @@ def necesita_generarse(valor: str) -> bool:
 # ✅ Genera todo el contenido SEO basado en nombre y categoría
 def generar_contenido(nombre, categoria):
     return f"""
-Quiero que generes contenido SEO para un producto de una tienda online mayorista chilena llamada comercio el sol.
+Actúa como un experto en redacción SEO y marketing digital con experiencia en eCommerce. Recibirás un producto con su nombre y categoría. Debes generar 3 elementos bien redactados y optimizados para buscadores:
 
-Producto: {nombre}
+1. **Frase clave principal** (1 sola, específica, realista, con mas de 10 busquedas)
+2. **Título SEO** (máx. 35 caracteres, atractivo y directo)
+3. **Meta descripción** (máx. 160 caracteres, clara y vendedora)
+4. **Descripción larga** (persuasiva, enfocada en beneficios y público mayorista de 250 a 300 palabras, y 3 parrafos y la frace clave debe estar almenos una vez en el primer parrafo)
+
+### Reglas clave:
+- No incluyas frases como "esta es la frase clave" o "esta es la meta descripción".
+- Usa un tono humano, confiable y profesional.
+- No inventes propiedades que el producto no tiene.
+- No repitas el nombre del producto más de lo necesario.
+- Si el producto tiene enfoque mayorista, destácalo.
+
+### Entrada:
+Nombre del producto: {nombre}
 Categoría: {categoria}
 
-1. Identifica una única frase clave clara y breve relacionada con el producto, que tenga mas de 10 busquedas en google chile.
-2. Crea un **meta título SEO** que incluya la frase clave al inicio y no exceda los 40 caracteres.
-3. Redacta una **meta descripción** con tono humano y vendedor, incluyendo la frase clave, con un máximo de 130 caracteres.
-4. Redacta una **descripción larga** (300 palabras aprox.) que comience con un resumen del producto y luego profundice en su uso y beneficios. Debe sonar natural, sin repetir frases o estructuras genéricas y tener almenos 3 parrafos de contenido.
-
-Consideraciones importantes:
-    Para la descripcion larga la frace clave debe aparecer maximo 3 veces en toda la redaccion y tener como minimo 3 parrafos.
-    debes serguir el formado de respuesta que se te entrega, sin poner el meta titulo o la meta descripcion como parte de la respuesta de la descripcion larga 
-    la respuesta tiene que ser lo mas humanizada posible, no puede ser redundante. 
-
-Responde en el siguiente formato:
----
-Frase Clave: [aquí va la frase]
-Título SEO: [aquí va el título SEO]
-Descripción Meta: [aquí va la descripción corta]
-Descripción Larga: [aquí va la descripción larga]
+### Salida esperada:
+Frase clave: ...
+Título SEO: ...
+Meta descripción: ...
+Descripción larga: ...
 """
 
 #buscar frace clave
@@ -83,7 +85,7 @@ Producto: {nombre}
 Categoría: {categoria}
 Título SEO: {titulo}
 Meta Descripción: {metadesc}
-Descripción larga: {descripcion}
+Descripción Larga: {descripcion}
 
 ⚠️ Extrae solamente **una frase clave única y relevante** para este producto. No agregues comentarios ni explicaciones, solo la frase clave.
 """
@@ -96,7 +98,7 @@ def extraer_campos(texto,focuskw):
     titulo = next((l.replace("Título SEO:", "").strip() for l in lineas if "Título SEO:" in l), "")
     descripcion = next((l.replace("Meta descripción:", "").strip() for l in lineas if "Meta descripción:" in l), "")
     desc_larga = "\n".join(l for l in lineas if not l.startswith("Título SEO:") and not l.startswith("Meta descripción:"))
-    desc_larga = desc_larga.replace("Descripción larga:", "").strip()
+    desc_larga = desc_larga.replace("Descripción Larga:", "").strip()
     return focuskw,titulo, descripcion, desc_larga
 
 def procesar_csv(entrada_csv: str, salida_csv: str):
@@ -106,7 +108,7 @@ def procesar_csv(entrada_csv: str, salida_csv: str):
         campos = reader.fieldnames or []
         
         nuevos_campos = [
-            "ID", "Nombre", "Categoría",
+            "ID", "Nombre", "Categoría", "Descripción",
             "Meta: _yoast_wpseo_focuskw",
             "Meta: _yoast_wpseo_title",
             "Meta: _yoast_wpseo_metadesc"
@@ -127,7 +129,7 @@ def procesar_csv(entrada_csv: str, salida_csv: str):
                 continue
 
             if necesita_generarse(descripcion):
-                print("✍️ generando nuevo contenido SEO para {nombre}")
+                print(f"✍️ generando nuevo contenido SEO para {nombre}")
                 prompt = generar_contenido(nombre, categoria)
                 respuesta = solicitar_respuesta(prompt)
 
@@ -159,6 +161,7 @@ def procesar_csv(entrada_csv: str, salida_csv: str):
                 "ID": id_producto,
                 "Nombre": nombre,
                 "Categoría": categoria,
+                "Descripción": descripcion,
                 "Meta: _yoast_wpseo_focuskw": foco or "",
                 "Meta: _yoast_wpseo_title": titulo or "",
                 "Meta: _yoast_wpseo_metadesc": metadesc or ""
@@ -167,5 +170,5 @@ def procesar_csv(entrada_csv: str, salida_csv: str):
 
 # ✅ Ejecuta el script
 if __name__ == "__main__":
-    procesar_csv('tercera.csv', "productos_conkw.csv")
+    procesar_csv('segunda.csv', "productos_conkw.csv")
 
